@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="dataweave_basics" doc:id="46ab73cb-801d-42b6-a8a2-074fc8a26b82" >
+		<ee:transform doc:name="Concatenate strings" doc:id="0fcefd8a-f7d9-4148-a554-5933eaa1540f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"algo": "uno" ++ " " ++ "dos",
+	"algoMas": ("otra" ++ " " ++ "cosa")
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Convert JSON into XML" doc:id="87fdb086-fa14-43e2-a19b-66088cc332da" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+---
+{ "contenido" : {
+	"algo": "uno" ++ " " ++ "dos",
+	"algoMas": ("otra" ++ " " ++ "cosa")
+}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Create a variable" doc:id="c59c306c-6431-4f15-b5fd-bb2a383320fc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+var oneVar = { "algo": "una " ++ "cosa"}
+output application/json
+---
+oneVar]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Native functions" doc:id="f30a8af8-ca2f-4809-817c-fe3917e8c292" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var anotherVar = {
+	"suma": sum([1,2,3, 25]),
+	"promedio": avg([1,2,3, 25]),
+	"par?": isEven(4),
+	"mayus": upper("meti minus"),
+	"hora": now()
+}
+output application/json
+---
+anotherVar]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweave_files" doc:id="14f4230b-64cf-4211-9f91-85e479d0f436" >
+		<ee:transform doc:name="Read file from classpath" doc:id="841920f0-9b40-47a6-b2cd-1c6eb632e852" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+readUrl("classpath://personas.json")]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Define metadata and use it as payload" doc:id="19cdbbdc-18e3-40de-bff9-d6f395da6ba9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweave_objects" doc:id="29d0acd5-7150-48d5-80f3-364354ce04eb" >
+		<ee:transform doc:name="Map elements from an array into an object" doc:id="9a2ba39a-bec6-4c7b-9f93-202bb9d8249c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someVar = ["uno", "dos", "tres"]
+output application/json
+---
+someVar map (item, index) -> 
+	index: index ++ "_" ++ item]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Pluck array objects into an array" doc:id="b6fd3d99-de3e-4286-a4c7-3dad0d064970" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someVar = {
+	"val0": "cero",
+	"val1": "uno"
+}
+output application/json
+---
+
+someVar pluck ((value, key, index) -> 
+	value
+)
+
+//someVar pluck ((value, key, index) -> 
+//	key
+//)
+
+//someVar pluck ((value, key, index) -> 
+//	index
+//)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Filter array by expression" doc:id="7b481999-5747-496b-acd4-04de09b7594d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someVar = [20, 14, 35, 4]
+output application/java
+---
+
+someVar filter ((item, index) -> 
+	item >= 20
+)]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Filter object by expression" doc:id="5ae7ed26-fa16-4a0b-b6fb-28d0a8f3695b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someVar = {
+	"val0": "cero",
+	"val1": "uno"
+}
+
+output application/json
+---
+{
+	"collection": someVar filterObject ((value, key, index) ->
+		(key contains "val") and (sizeOf(value) > 3)
+	)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweave_selectors_objects" doc:id="6b07331c-9c40-4b8c-aae6-69e3f1c04248" >
+		<ee:transform doc:name="Single-value selector" doc:id="7d36719d-c972-4ca0-be63-6952c30df60a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someObject = {
+	"persons" : {
+		"person" : {
+			"name" : "Ana"
+		},
+		"person" : {
+			"name" : "Benja"
+		},
+		"person" : {
+			"name" : "Carlos"
+		}
+	}
+}
+
+output application/json
+---
+//someObject.persons[1]
+someObject.persons.person // returns the first occurrence]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Multiple-value selector" doc:id="c5a94a1c-a6fd-45ee-b611-b1b724de8785" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someObject = {
+	"persons" : {
+		"person" : {
+			"name" : "Ana"
+		},
+		"person" : {
+			"name" : "Benja"
+		},
+		"person" : {
+			"name" : "Carlos"
+		}
+	}
+}
+
+output application/json
+---
+ someObject.persons.*person // returns all occurrences]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Descendant-value selector" doc:id="cd9f944d-3e9b-4b78-ba72-935d6dd060f8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someObject = {
+	"persons" : {
+		"person" : {
+			"name" : "Ana",
+			"address" : {
+				"name" : "home",
+				"street": "123 Evergreen Av"
+			}
+		},
+		"person" : {
+			"name" : "Benja",
+			"address" : {
+				"name" : "home",
+				"street": "999 Main St"
+			}
+		},
+		"person" : {
+			"name" : "Carlos",
+			"address" : {
+				"name" : "office",
+				"street": "300 Wetchestershire Rd"
+			}
+		}
+	}
+}
+
+output application/json
+---
+ someObject.persons..name // returns all descendants named "name"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Key-value pair selector" doc:id="fd12693f-829e-4327-990d-b436358a4202" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someObject = {
+	"persons" : {
+		"person" : {
+			"name" : "Ana",
+			"address" : {
+				"name" : "home",
+				"street": "123 Evergreen Av"
+			}
+		},
+		"person" : {
+			"name" : "Benja",
+			"address" : {
+				"name" : "home",
+				"street": "999 Main St"
+			}
+		},
+		"person" : {
+			"name" : "Carlos",
+			"address" : {
+				"name" : "office",
+				"street": "300 Wetchestershire Rd"
+			}
+		}
+	}
+}
+
+output application/json
+---
+ someObject.persons.*person.&name // returns key and value (not just the value) ]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Index selector" doc:id="c16fbe12-af2e-4894-a31d-0ea3b597700b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someObject = {
+	"persons" : {
+		"person" : {
+			"name" : "Ana",
+			"address" : {
+				"name" : "home",
+				"street": "123 Evergreen Av"
+			}
+		},
+		"person" : {
+			"name" : "Benja",
+			"address" : {
+				"name" : "home",
+				"street": "999 Main St"
+			}
+		},
+		"person" : {
+			"name" : "Carlos",
+			"address" : {
+				"name" : "office",
+				"street": "300 Wetchestershire Rd"
+			}
+		}
+	}
+}
+
+output application/json
+---
+ someObject.persons[2]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweave_selectors_strings" doc:id="c479db85-a07b-491d-84cc-106d16d7fcaf" >
+		<ee:transform doc:name="Index selector" doc:id="05e438a7-5298-4d0e-b140-45449338568e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+
+var someString = "Mocosoft"
+output application/java
+---
+someString[2]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Range selector" doc:id="ecf11ecb-fa8a-40ff-943d-2baf2e90b2b0" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+
+var someString = "Mocosoft"
+output application/java
+---
+someString[0 to 3]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweave_lambda_basics" doc:id="f7aef327-a619-43ee-84f4-a1054374fa41" >
+		<http:listener doc:name="HTTP POST /lambas" doc:id="72d6455c-7867-45fa-b744-f3f3ec349951" config-ref="HTTP_Listener_config_on_8081" path="/lambdas" allowedMethods="POST"/>
+		<ee:transform doc:name="Declare and invoke function" doc:id="6099c42e-b14c-444f-9eb8-8b0eee541e3c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+fun createString(obj) = {
+	description: obj.key1 ++ " and " ++ obj.key2
+}
+
+output application/json
+---
+{
+	"root": createString(payload)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="83e41947-ba2f-4122-8a7c-e0b5da5086c0" message="#[payload]"/>
+		<ee:transform doc:name="Use named parameters in lambda" doc:id="037a52c7-1c11-419d-9894-26d9c2b590d4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someArray = [1,4,7,9]
+output application/json
+---
+{
+	"collection": someArray map ((eachArrayMember) -> 
+		(eachArrayMember * 100)
+	)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="a8a6fce5-c361-4184-961f-47cd3b7e7849" message="#[payload]" />
+		<ee:transform doc:name="Use default parameters in lambda" doc:id="56732a1e-200b-406d-92ca-9a29a6d2e3bc" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+var someArray = ["this", "is", "a", "sample", "array"]
+output application/json
+---
+{
+	"collection": someArray map (
+		// $$ index 
+		// $  item
+		"$$" : $
+	)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweave_lambda_intermmediate" doc:id="0acabc25-ff54-41df-a724-d5f5540efdf5" >
+		<ee:transform doc:name="Merges fields from separate arrays" doc:id="1f22dece-598d-41b8-8470-05c9fb2d065e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+var books = [
+	{
+		"bookId" : "A01",
+		"title": "first book",
+		"price": 100
+	},
+	{
+		"bookId" : "A02",
+		"title": "second book",
+		"price": 200
+	},
+	{
+		"bookId" : "A03",
+		"title": "third book",
+		"price": 300
+	}
+]
+
+var authors = [
+	{
+		"bookId" : "A01",
+		"author": "Adam"
+	},
+	{
+		"bookId" : "A02",
+		"author": "Bob"
+	},
+	{
+		"bookId" : "A03",
+		"author": "Charly"
+	}
+]
+output application/json
+---
+{
+	"catalog" : books map  ((item, index) -> 
+		using (id = item.bookId) {
+				"id": id,
+				"title": item.title,
+			 	"price": item.price,
+			 	(authors filter ((item, index) -> item.*bookId contains id) 
+			 		map ((item, index) -> "Autor": item.author)
+			 	)
+		
+			
+		}
+	)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<ee:transform doc:name="Copy_of_Merges fields from separate arrays" doc:id="1d59d197-841c-4e66-97a1-7ba24ba8e013" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+var books = [
+	{
+		"bookId" : "A01",
+		"title": "first book",
+		"price": 100
+	},
+	{
+		"bookId" : "A02",
+		"title": "second book",
+		"price": 200
+	},
+	{
+		"bookId" : "A03",
+		"title": "third book",
+		"price": 300
+	}
+]
+
+
+output application/json
+---
+{
+	"prices" : books.price as String 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
