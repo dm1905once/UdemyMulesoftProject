@@ -448,7 +448,9 @@ var books = [
 output application/json
 ---
 {
-	"prices" : books.price as String 
+	"prices" : books.*price[?($>200)]
+	// ? validates if the "price" exists as a key
+	// If so, check if key ($) is greater than 200
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
