@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="get_all_customers" doc:id="899b77b8-66a0-42a4-99ae-ca32947259df" >
+		<http:listener doc:name="HTTP GET" doc:id="db6dfd03-8c3e-48d8-bd82-74a4c5066cee" config-ref="HTTP_Listener_config_on_8081" path="/customers" allowedMethods="GET"/>
+		<db:select doc:name="getAllCustomers" doc:id="87faa47f-5cf2-4941-8c15-eeadf4f3c6f7" config-ref="local_postgress">
+			<db:sql ><![CDATA[select * from customers;]]></db:sql>
+		</db:select>
+		<set-payload value="#[%dw 2.0
+output application/json
+---
+payload]" doc:name="Set Payload" doc:id="00a0c3f7-11dd-42bc-b93a-5ab33af01b95" />
+	</flow>
+	<flow name="get_customer_by_id" doc:id="5fc70180-f455-468b-99cc-b9803ed631f5" >
+		<http:listener doc:name="HTTP GET" doc:id="b8027786-88f1-45da-a426-183c846b6544" config-ref="HTTP_Listener_config_on_8081" path="/customers/{customerId}" allowedMethods="GET"/>
+		<db:select doc:name="getAllCustomers" doc:id="890e6ac3-70bc-4c1d-9ac9-37e1ea50a3d5" config-ref="local_postgress">
+			<db:sql ><![CDATA[select * from customers where id = :customerID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'customerID' : attributes.uriParams.customerId
+}]]]></db:input-parameters>
+		</db:select>
+		<choice doc:name="Check if results exist" doc:id="0e4696d4-6fc4-49df-8117-e5d9ae4b43d4" >
+			<when expression="#[!isEmpty(payload)]">
+				<set-payload value="#[%dw 2.0
+output application/json
+---
+payload]" doc:name="Set Payload" doc:id="5cb11e6d-29bb-43ae-a449-ebc315e66260" />
+			</when>
+			<otherwise >
+				<set-payload value='#["no customer found"]' doc:name="Set Payload" doc:id="9170984c-9520-4aae-b792-8c1b3bc45705" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="insert_new_customer" doc:id="2f794bd1-2e25-4d9d-8b93-0858b06e4a4c" >
+		<http:listener doc:name="HTTP POST" doc:id="d3e9f9e0-62d9-4b62-b5d4-6a2401afecef" config-ref="HTTP_Listener_config_on_8081" path="/customers" allowedMethods="POST"/>
+		<db:insert doc:name="Insert" doc:id="c9b75f43-b2ce-49ca-87a9-e97da88b315d" config-ref="local_postgress" autoGenerateKeys="true">
+			<db:sql ><![CDATA[INSERT INTO "customers"("customerName")
+VALUES (:name)]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'name': payload.customer.customerName
+}]]]></db:input-parameters>
+		</db:insert>
+		<choice doc:name="Check insert results" doc:id="49ee063c-1aa9-4db2-9a94-2e0c87cae03e" >
+			<when expression="#[payload.affectedRows &gt; 0]">
+				<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+	"message": "Record(s) successfully inserted",
+	"details" : payload
+}]' doc:name="Set Payload (Success)" doc:id="5115104f-4f70-4f27-a719-2945a15aa650" />
+			</when>
+			<otherwise >
+				<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+	"message": "No records were inserted",
+	"details" : payload
+}]' doc:name="Set Payload (Error)" doc:id="4c93f059-c42f-4602-9724-1dca9375b9c5" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="update_customer_by_id" doc:id="6fb10772-8f49-4d88-bc12-7511b0542b36" >
+		<http:listener doc:name="HTTP PUT" doc:id="6c7fbe2e-0f70-4199-b924-66e19f9d984e" config-ref="HTTP_Listener_config_on_8081" path="/customers/{customerId}" allowedMethods="PUT"/>
+		<db:update doc:name="Update" doc:id="60a4249b-a2e7-431f-acbd-8e0b1f676847" config-ref="local_postgress">
+			<db:sql ><![CDATA[UPDATE customers 
+SET "customerName" = :customerName
+WHERE id = :customerID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'customerID' : attributes.uriParams.customerId,
+	'customerName' : payload.customer.customerName
+}]]]></db:input-parameters>
+		</db:update>
+		<choice doc:name="Check if results exist" doc:id="9a7844e4-033c-4421-9e79-55f22ffa75a1" >
+			<when expression="#[!isEmpty(payload)]">
+				<set-payload value="#[%dw 2.0
+output application/json
+---
+payload]" doc:name="Set Payload" doc:id="940305c3-c9f1-45e8-af02-6145627a3d73" />
+			</when>
+			<otherwise >
+				<set-payload value='#["no customer found"]' doc:name="Set Payload" doc:id="bf2ef6ac-7b0f-48fa-b31b-196e350053ef" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="delete_customer_by_id" doc:id="665f52eb-13cc-45eb-af89-89e3d5a28c25" >
+		<http:listener doc:name="HTTP DELETE" doc:id="3bc32a54-9c6d-4638-a74d-b8b8391e055d" config-ref="HTTP_Listener_config_on_8081" path="/customers/{customerId}" allowedMethods="DELETE"/>
+		<db:delete doc:name="Delete" doc:id="d6efba8b-bf51-4f3a-bc29-7cc15d016da9" config-ref="local_postgress">
+			<db:sql ><![CDATA[DELETE FROM customers 
+WHERE id = :customerID]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	'customerID' : attributes.uriParams.customerId
+}]]]></db:input-parameters>
+		</db:delete>
+		<logger level="INFO" doc:name="Logger" doc:id="0849e19c-7c8d-44e8-b954-845eb5952583" message="#[payload]"/>
+		<choice doc:name="Check if results exist" doc:id="d6ed3460-26b7-4244-a8e4-5a53bfdcc9cd" >
+			<when expression="#[payload &gt; 0]">
+				<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+	"message": "Customer deleted"
+}]' doc:name="Set Payload" doc:id="b1bea685-aa7e-4608-9309-a0c2f498f692" />
+			</when>
+			<otherwise >
+				<set-payload value='#["no customer found"]' doc:name="Set Payload" doc:id="85b59a47-f881-4371-af6b-ed9f83e41010" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
